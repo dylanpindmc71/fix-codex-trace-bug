@@ -1,10 +1,19 @@
 # Codex TRACE 日志高频写盘修复脚本
 
+> **重要限制：本仓库脚本仅限 macOS + Codex 桌面版。**
+>
+> 不支持 Windows。  
+> 不支持 Linux。  
+> 不支持只安装 Codex CLI 的环境。  
+> 不支持非 Codex 桌面版日志库。  
+>
+> 如果你的电脑不是 macOS，或者你用的不是 Codex 桌面版，请不要运行这些 `.command` 脚本。
+
 用于处理 Codex 桌面版把大量 `TRACE` 日志写入 `~/.codex/logs_2.sqlite`，导致 SQLite WAL 高频写盘、日志库膨胀的问题。
 
 ## 适用范围
 
-适合：
+只适合同时满足这些条件的电脑：
 
 - macOS
 - Codex 桌面版
@@ -12,12 +21,19 @@
 - `logs` 表包含 `level` 字段
 - 系统有 `zsh`、`sqlite3`、`lsof`、`osascript`、`open`
 
-不适合：
+明确不适合：
 
 - Windows
 - Linux
 - Codex CLI-only 环境
 - Codex 未来版本改了日志库结构
+
+原因：
+
+- `.command` 是 macOS 脚本格式
+- 脚本使用 macOS 专有命令 `osascript` 和 `open -a "Codex"`
+- 日志路径按 Codex 桌面版的 `~/.codex/logs_2.sqlite` 设计
+- 修复逻辑依赖 `logs` 表和 `level` 字段
 
 ## 脚本
 
