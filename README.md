@@ -96,6 +96,49 @@ macOS 如果提示无法打开：
 - `INFO`、`DEBUG`、`WARN`、`ERROR` 仍会写入
 - 如果以后要向官方提交底层网络 TRACE，需要先运行回滚脚本
 
+## 修复后的可能风险
+
+这个修复是“拦截 TRACE 写入日志库”，不是 Codex 官方修复。它主要是止血，降低磁盘写入和 WAL 膨胀。
+
+可能风险：
+
+- **缺少 TRACE 诊断日志**
+  - 修复后，Codex 的底层网络、websocket、轮询细节不会再以 `TRACE` 级别进入 `logs` 表。
+  - 如果之后要给官方排查深层 bug，日志细节会少。
+  - 需要完整 TRACE 时，先运行 `回滚修复-rollback_codex_trace_log_trigger.command`。
+
+- **Codex 更新后可能需要重新处理**
+  - Codex 更新可能删除 trigger。
+  - Codex 更新也可能改变 `logs_2.sqlite` 的表结构。
+  - 更新后如果高频 TRACE 又出现，运行 `更新后补修-repair_codex_trace_guard_after_update.command`。
+
+- **如果 Codex 更新后打不开**
+  - 可能是日志库结构变化，或者 trigger 和新版本不兼容。
+  - 运行 `因修复导致更新出错-rescue_codex_if_update_breaks_after_trace_fix.command`。
+  - 这个救援脚本会先尝试删除 trigger；如果日志库打不开，会把 `logs_2.sqlite` 移走，让 Codex 重建日志库。
+
+- **运行脚本时会关闭并重开 Codex**
+  - 正在执行的 Codex 任务可能中断。
+  - 建议在没有重要任务运行时执行。
+
+- **已有日志库体积不会自动变小**
+  - trigger 只阻止新的 TRACE 写入。
+  - 已经膨胀的 `logs_2.sqlite` 不会自动瘦身。
+  - 如需回收空间，需要在 Codex 关闭后另行执行 SQLite `VACUUM`。
+
+- **脚本只保护当前已知结构**
+  - 当前逻辑依赖 `logs` 表和 `level` 字段。
+  - 如果未来 Codex 改表名、字段名、日志库路径，脚本会停止或失效。
+
+不会影响的内容：
+
+- 不会删除 Codex session
+- 不会修改 `state_5.sqlite`
+- 不会修改 `sessions`
+- 不会修改 `archived_sessions`
+- 不会修改 `auth.json`
+- 不会修改 `config.toml`
+
 ## 判断是否修好
 
 修复后检查：
