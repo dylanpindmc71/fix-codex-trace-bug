@@ -1,0 +1,6 @@
+.DS_Store
+*.txt
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.rescued_*
